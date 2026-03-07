@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git Cheatsheet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg:        #0d0f14;
+    --surface:   #13161e;
+    --border:    #1e2330;
+    --accent:    #f97316;
+    --accent2:   #fb923c;
+    --green:     #4ade80;
+    --blue:      #60a5fa;
+    --purple:    #a78bfa;
+    --red:       #f87171;
+    --yellow:    #fbbf24;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --code-bg:   #0a0c10;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── grid noise overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(249,115,22,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(249,115,22,.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ── header ── */
+  header {
+    margin-bottom: 56px;
+  }
+
+  .repo-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(249,115,22,.1);
+    border: 1px solid rgba(249,115,22,.3);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: .05em;
+    margin-bottom: 20px;
+  }
+
+  .repo-tag::before { content: '⬡'; font-size: 10px; }
+
+  h1 {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.02em;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: .04em;
+  }
+
+  /* ── section ── */
+  .section {
+    margin-bottom: 40px;
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .section-label h2 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2px;
+  }
+
+  /* ── card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+    transition: border-color .15s, transform .15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--card-accent, var(--accent));
+    opacity: 0;
+    transition: opacity .15s;
+  }
+
+  .card:hover {
+    border-color: rgba(255,255,255,.1);
+    transform: translateY(-1px);
+  }
+
+  .card:hover::before { opacity: 1; }
+
+  .cmd {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .prompt {
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    line-height: 1.5;
+    word-break: break-all;
+  }
+
+  code .flag   { color: var(--blue); }
+  code .arg    { color: var(--yellow); }
+  code .branch { color: var(--green); }
+  code .remote { color: var(--purple); }
+
+  .desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    padding-left: 22px;
+  }
+
+  /* ── accent colours per section ── */
+  .s-setup    .card { --card-accent: var(--blue); }
+  .s-basic    .card { --card-accent: var(--green); }
+  .s-branch   .card { --card-accent: var(--purple); }
+  .s-remote   .card { --card-accent: var(--accent); }
+  .s-undo     .card { --card-accent: var(--red); }
+  .s-stash    .card { --card-accent: var(--yellow); }
+  .s-inspect  .card { --card-accent: var(--blue); }
+  .s-advanced .card { --card-accent: var(--purple); }
+  .s-rebase   .card { --card-accent: var(--red); }
+  .s-worktree .card { --card-accent: var(--green); }
+  .s-hooks    .card { --card-accent: var(--yellow); }
+  .s-config   .card { --card-accent: var(--blue); }
+
+  .dot-setup    { background: var(--blue); }
+  .dot-basic    { background: var(--green); }
+  .dot-branch   { background: var(--purple); }
+  .dot-remote   { background: var(--accent); }
+  .dot-undo     { background: var(--red); }
+  .dot-stash    { background: var(--yellow); }
+  .dot-inspect  { background: var(--blue); }
+  .dot-advanced { background: var(--purple); }
+  .dot-rebase   { background: var(--red); }
+  .dot-worktree { background: var(--green); }
+  .dot-hooks    { background: var(--yellow); }
+  .dot-config   { background: var(--blue); }
+
+  /* ── footer ── */
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  footer span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="repo-tag">ShriHarsan64K / dotfiles</div>
+    <h1>Git Cheatsheet</h1>
+    <p class="subtitle"># every command you actually use, with a reason why</p>
+  </header>
+
+  <!-- SETUP -->
+  <div class="section s-setup">
+    <div class="section-label">
+      <div class="dot dot-setup"></div>
+      <h2>Setup &amp; Config</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> user.name <span class="arg">"Your Name"</span></code></div>
+        <p class="desc">Set your name — shown on every commit you make</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> user.email <span class="arg">"<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e59c8a90a58088848c89cb868a88">[email&#160;protected]</a>"</span></code></div>
+        <p class="desc">Set your email — must match your GitHub account for contributions to count</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> core.editor <span class="arg">vim</span></code></div>
+        <p class="desc">Set default editor for commit messages (vim / nano / code)</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> init.defaultBranch <span class="arg">main</span></code></div>
+        <p class="desc">Make all new repos start on <code>main</code> instead of <code>master</code></p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--list</span></code></div>
+        <p class="desc">Show all current git configuration values</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git init</code></div>
+        <p class="desc">Initialise a brand-new local repo in the current folder</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BASIC WORKFLOW -->
+  <div class="section s-basic">
+    <div class="section-label">
+      <div class="dot dot-basic"></div>
+      <h2>Basic Workflow</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git status</code></div>
+        <p class="desc">Show which files are staged, unstaged, or untracked</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git add <span class="arg">&lt;file&gt;</span></code></div>
+        <p class="desc">Stage a specific file for the next commit</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git add .</code></div>
+        <p class="desc">Stage every changed and new file in the current directory</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git commit <span class="flag">-m</span> <span class="arg">"message"</span></code></div>
+        <p class="desc">Save staged changes with a description message</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git commit <span class="flag">--amend</span></code></div>
+        <p class="desc">Edit the last commit message or add forgotten files to it</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git diff</code></div>
+        <p class="desc">Show line-by-line changes not yet staged</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git diff <span class="flag">--staged</span></code></div>
+        <p class="desc">Show changes that are staged and ready to commit</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git rm <span class="arg">&lt;file&gt;</span></code></div>
+        <p class="desc">Delete a file and stage its removal in one step</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BRANCHING -->
+  <div class="section s-branch">
+    <div class="section-label">
+      <div class="dot dot-branch"></div>
+      <h2>Branching &amp; Merging</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git branch</code></div>
+        <p class="desc">List all local branches — the active one is marked with *</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git branch <span class="branch">&lt;name&gt;</span></code></div>
+        <p class="desc">Create a new branch without switching to it</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git checkout <span class="flag">-b</span> <span class="branch">&lt;name&gt;</span></code></div>
+        <p class="desc">Create a new branch and switch to it immediately</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git switch <span class="branch">&lt;name&gt;</span></code></div>
+        <p class="desc">Switch to an existing branch (modern alternative to checkout)</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git merge <span class="branch">&lt;branch&gt;</span></code></div>
+        <p class="desc">Merge another branch into the current one</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git rebase <span class="branch">&lt;branch&gt;</span></code></div>
+        <p class="desc">Replay your commits on top of another branch for a clean history</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git branch <span class="flag">-d</span> <span class="branch">&lt;name&gt;</span></code></div>
+        <p class="desc">Delete a branch that has already been merged</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git branch <span class="flag">-D</span> <span class="branch">&lt;name&gt;</span></code></div>
+        <p class="desc">Force-delete a branch even if it has unmerged commits</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- REMOTE -->
+  <div class="section s-remote">
+    <div class="section-label">
+      <div class="dot dot-remote"></div>
+      <h2>Remote / GitHub</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git clone <span class="arg">&lt;url&gt;</span></code></div>
+        <p class="desc">Download a repo and its full history to your machine</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git remote <span class="flag">-v</span></code></div>
+        <p class="desc">List all remote connections and their URLs</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git remote add <span class="remote">origin</span> <span class="arg">&lt;url&gt;</span></code></div>
+        <p class="desc">Connect your local repo to a remote for the first time</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git push <span class="remote">origin</span> <span class="branch">&lt;branch&gt;</span></code></div>
+        <p class="desc">Upload your local commits to the remote branch</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git push <span class="flag">-u</span> <span class="remote">origin</span> <span class="branch">main</span></code></div>
+        <p class="desc">Push and set upstream so future <code>git push</code> needs no arguments</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git pull</code></div>
+        <p class="desc">Fetch remote changes and merge them into your current branch</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git fetch</code></div>
+        <p class="desc">Download remote changes without merging them — safe to inspect first</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git push <span class="flag">--delete</span> <span class="remote">origin</span> <span class="branch">&lt;branch&gt;</span></code></div>
+        <p class="desc">Delete a branch on the remote (GitHub)</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- UNDO -->
+  <div class="section s-undo">
+    <div class="section-label">
+      <div class="dot dot-undo"></div>
+      <h2>Undo &amp; Fix</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git restore <span class="arg">&lt;file&gt;</span></code></div>
+        <p class="desc">Discard unstaged changes in a file — reverts to last commit</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git restore <span class="flag">--staged</span> <span class="arg">&lt;file&gt;</span></code></div>
+        <p class="desc">Unstage a file without losing your changes</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git reset <span class="flag">HEAD~1</span> <span class="flag">--mixed</span></code></div>
+        <p class="desc">Undo the last commit but keep the changes in your working directory</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git reset <span class="flag">HEAD~1</span> <span class="flag">--hard</span></code></div>
+        <p class="desc">Completely delete the last commit and all its changes — irreversible</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git revert <span class="arg">&lt;commit&gt;</span></code></div>
+        <p class="desc">Create a new commit that reverses a specific commit — safe for shared branches</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git clean <span class="flag">-fd</span></code></div>
+        <p class="desc">Delete all untracked files and directories — cannot be undone</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- STASH -->
+  <div class="section s-stash">
+    <div class="section-label">
+      <div class="dot dot-stash"></div>
+      <h2>Stash</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git stash</code></div>
+        <p class="desc">Temporarily save uncommitted changes so you can switch branches cleanly</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git stash pop</code></div>
+        <p class="desc">Restore the most recently stashed changes and remove them from the stash</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git stash list</code></div>
+        <p class="desc">Show all saved stashes with their index numbers</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git stash drop</code></div>
+        <p class="desc">Delete the most recent stash without applying it</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INSPECT -->
+  <div class="section s-inspect">
+    <div class="section-label">
+      <div class="dot dot-inspect"></div>
+      <h2>Inspect &amp; Log</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git log <span class="flag">--oneline --graph</span></code></div>
+        <p class="desc">Compact visual history showing branches and merges</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git log <span class="flag">-p</span> <span class="arg">&lt;file&gt;</span></code></div>
+        <p class="desc">Show the full change history of a specific file</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git show <span class="arg">&lt;commit&gt;</span></code></div>
+        <p class="desc">Display the full details and diff of a specific commit</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git blame <span class="arg">&lt;file&gt;</span></code></div>
+        <p class="desc">Show who last changed each line of a file and in which commit</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git shortlog <span class="flag">-sn</span></code></div>
+        <p class="desc">Show commit counts per contributor — ranked by most commits</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git tag <span class="arg">&lt;v1.0&gt;</span></code></div>
+        <p class="desc">Mark a specific commit as a release or milestone with a label</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ADVANCED -->
+  <div class="section s-advanced">
+    <div class="section-label">
+      <div class="dot dot-advanced"></div>
+      <h2>Advanced</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git cherry-pick <span class="arg">&lt;commit&gt;</span></code></div>
+        <p class="desc">Apply a specific commit from another branch onto the current one</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git cherry-pick <span class="arg">&lt;A&gt;</span>..<span class="arg">&lt;B&gt;</span></code></div>
+        <p class="desc">Apply a range of commits from A to B onto the current branch</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git cherry-pick <span class="flag">--no-commit</span> <span class="arg">&lt;commit&gt;</span></code></div>
+        <p class="desc">Apply changes from a commit but don't auto-commit — lets you review first</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git bisect start</code></div>
+        <p class="desc">Begin a binary search through commits to find which one introduced a bug</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git bisect good <span class="arg">&lt;commit&gt;</span></code></div>
+        <p class="desc">Mark a commit as working during a bisect session</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git bisect bad <span class="arg">&lt;commit&gt;</span></code></div>
+        <p class="desc">Mark a commit as broken during a bisect session</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git bisect reset</code></div>
+        <p class="desc">End the bisect session and return HEAD to its original position</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git reflog</code></div>
+        <p class="desc">Show every HEAD movement — recover lost commits after a bad reset</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git reflog <span class="arg">&lt;branch&gt;</span></code></div>
+        <p class="desc">Show the movement history of a specific branch — not just HEAD</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git submodule add <span class="arg">&lt;url&gt;</span></code></div>
+        <p class="desc">Embed another git repo inside your repo as a tracked dependency</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git submodule update <span class="flag">--init --recursive</span></code></div>
+        <p class="desc">Pull and initialise all submodules after cloning a repo that has them</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git archive <span class="flag">--format=zip</span> HEAD <span class="flag">&gt;</span> <span class="arg">out.zip</span></code></div>
+        <p class="desc">Export the current snapshot as a zip file — no git history included</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git notes add <span class="flag">-m</span> <span class="arg">"note"</span> <span class="arg">&lt;commit&gt;</span></code></div>
+        <p class="desc">Attach a note to a commit without changing its hash</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git gc</code></div>
+        <p class="desc">Run garbage collection to compress history and clean up loose objects</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git fsck</code></div>
+        <p class="desc">Verify the integrity of the git object database — checks for corruption</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- REBASE -->
+  <div class="section s-rebase">
+    <div class="section-label">
+      <div class="dot dot-rebase"></div>
+      <h2>Rebase</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git rebase <span class="branch">&lt;branch&gt;</span></code></div>
+        <p class="desc">Replay your commits on top of another branch — creates a linear, cleaner history</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git rebase <span class="flag">-i</span> HEAD~<span class="arg">3</span></code></div>
+        <p class="desc">Interactive rebase — rewrite, squash, reorder, or drop the last 3 commits</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git rebase <span class="flag">-i</span> <span class="remote">origin</span>/<span class="branch">main</span></code></div>
+        <p class="desc">Interactively rebase all commits not yet on main — clean up before a PR</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git rebase <span class="flag">--onto</span> <span class="branch">main</span> <span class="branch">old-base</span> <span class="branch">feature</span></code></div>
+        <p class="desc">Move feature branch from old-base onto main — precise branch transplanting</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git rebase <span class="flag">--continue</span></code></div>
+        <p class="desc">Resume rebase after resolving a merge conflict</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git rebase <span class="flag">--skip</span></code></div>
+        <p class="desc">Skip the current conflicting commit and continue the rebase</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git rebase <span class="flag">--abort</span></code></div>
+        <p class="desc">Cancel the rebase entirely and return to the state before it started</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git rebase <span class="flag">--autosquash -i</span> <span class="remote">origin</span>/<span class="branch">main</span></code></div>
+        <p class="desc">Auto-arrange fixup! and squash! commits during interactive rebase</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git rebase <span class="flag">--autostash</span> <span class="branch">&lt;branch&gt;</span></code></div>
+        <p class="desc">Auto-stash uncommitted changes before rebase and restore them after</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git commit <span class="flag">--fixup</span>=<span class="arg">&lt;commit&gt;</span></code></div>
+        <p class="desc">Create a fixup commit that auto-squashes into a specific earlier commit on rebase</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git pull <span class="flag">--rebase</span></code></div>
+        <p class="desc">Pull remote changes and rebase your local commits on top instead of merging</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> pull.rebase true</code></div>
+        <p class="desc">Make rebase the default behaviour for all future git pulls</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- WORKTREE -->
+  <div class="section s-worktree">
+    <div class="section-label">
+      <div class="dot dot-worktree"></div>
+      <h2>Worktree</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git worktree add <span class="arg">&lt;path&gt;</span> <span class="branch">&lt;branch&gt;</span></code></div>
+        <p class="desc">Check out a branch into a separate folder — work on two branches simultaneously without stashing</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git worktree list</code></div>
+        <p class="desc">Show all linked worktrees and their current branches</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git worktree remove <span class="arg">&lt;path&gt;</span></code></div>
+        <p class="desc">Remove a linked worktree that is no longer needed</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git worktree prune</code></div>
+        <p class="desc">Clean up stale worktree references — runs automatically with gc</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- HOOKS -->
+  <div class="section s-hooks">
+    <div class="section-label">
+      <div class="dot dot-hooks"></div>
+      <h2>Hooks &amp; Automation</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>ls .git/hooks/</code></div>
+        <p class="desc">List all available hook scripts — rename any <code>.sample</code> file to activate it</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>chmod +x .git/hooks/pre-commit</code></div>
+        <p class="desc">Make a hook executable — hooks must be executable or git ignores them</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git commit <span class="flag">--no-verify</span></code></div>
+        <p class="desc">Skip pre-commit and commit-msg hooks — useful when hooks are blocking a valid commit</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> core.hooksPath <span class="arg">~/.githooks</span></code></div>
+        <p class="desc">Set a global hooks directory — share hooks across all repos without copying them</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CONFIG & ALIASES -->
+  <div class="section s-config">
+    <div class="section-label">
+      <div class="dot dot-config"></div>
+      <h2>Config &amp; Aliases</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> alias.st status</code></div>
+        <p class="desc">Create a global alias — <code>git st</code> now runs <code>git status</code></p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> alias.lg <span class="arg">"log --oneline --graph --decorate"</span></code></div>
+        <p class="desc">Create an alias for a complex command — <code>git lg</code> shows a pretty log</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> core.autocrlf input</code></div>
+        <p class="desc">Convert CRLF to LF on commit — essential on Linux/macOS to avoid line ending issues</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> core.excludesfile <span class="arg">~/.gitignore_global</span></code></div>
+        <p class="desc">Set a global gitignore file that applies to every repo on your machine</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> merge.tool vimdiff</code></div>
+        <p class="desc">Set your preferred merge conflict resolution tool</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> diff.tool vscode</code></div>
+        <p class="desc">Use VS Code as your diff viewer for <code>git difftool</code></p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--local</span> user.email <span class="arg">"work@company.com"</span></code></div>
+        <p class="desc">Override global config for a single repo — useful for work vs personal projects</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span><code>git config <span class="flag">--global</span> rerere.enabled true</code></div>
+        <p class="desc">Remember how you resolved a conflict and auto-apply it next time the same conflict appears</p>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <span>ShriHarsan64K / git-cheatsheet — cheatsheet.html</span>
+    <span>git version &mdash; <a href="https://git-scm.com/docs" target="_blank">git-scm.com/docs</a></span>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git Push Cheatsheet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg:      #0d0f14;
+    --surface: #13161e;
+    --border:  #1e2330;
+    --accent:  #f97316;
+    --green:   #4ade80;
+    --blue:    #60a5fa;
+    --purple:  #a78bfa;
+    --red:     #f87171;
+    --yellow:  #fbbf24;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 48px 24px 80px;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(249,115,22,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(249,115,22,.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ── header ── */
+  header { margin-bottom: 56px; }
+
+  .repo-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(249,115,22,.1);
+    border: 1px solid rgba(249,115,22,.3);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: .05em;
+    margin-bottom: 20px;
+  }
+  .repo-tag::before { content: '⬡'; font-size: 10px; }
+
+  h1 {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.02em;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: .04em;
+  }
+
+  /* ── section ── */
+  .section { margin-bottom: 40px; }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .section-label h2 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2px;
+  }
+
+  /* ── card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+    transition: border-color .15s, transform .15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--card-accent, var(--accent));
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .card:hover { border-color: rgba(255,255,255,.1); transform: translateY(-1px); }
+  .card:hover::before { opacity: 1; }
+
+  /* ── danger badge ── */
+  .card.danger { border-color: rgba(248,113,113,.2); }
+  .card.danger::after {
+    content: '⚠ destructive';
+    position: absolute;
+    top: 10px; right: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--red);
+    letter-spacing: .05em;
+    opacity: .7;
+  }
+
+  .cmd {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .prompt {
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    line-height: 1.5;
+    word-break: break-all;
+  }
+  code .flag   { color: var(--blue); }
+  code .arg    { color: var(--yellow); }
+  code .branch { color: var(--green); }
+  code .remote { color: var(--purple); }
+  code .danger { color: var(--red); }
+
+  .desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    padding-left: 22px;
+  }
+
+  /* section accent colours */
+  .s-basics   .card { --card-accent: var(--accent); }
+  .s-branch   .card { --card-accent: var(--green); }
+  .s-tags     .card { --card-accent: var(--yellow); }
+  .s-force    .card { --card-accent: var(--red); }
+  .s-options  .card { --card-accent: var(--blue); }
+  .s-patterns .card { --card-accent: var(--purple); }
+
+  .dot-basics   { background: var(--accent); }
+  .dot-branch   { background: var(--green); }
+  .dot-tags     { background: var(--yellow); }
+  .dot-force    { background: var(--red); }
+  .dot-options  { background: var(--blue); }
+  .dot-patterns { background: var(--purple); }
+
+  /* ── tip box ── */
+  .tip {
+    background: rgba(96,165,250,.06);
+    border: 1px solid rgba(96,165,250,.2);
+    border-left: 3px solid var(--blue);
+    padding: 14px 18px;
+    margin-bottom: 40px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: var(--blue);
+    line-height: 1.7;
+    letter-spacing: .02em;
+  }
+  .tip strong { color: #fff; }
+
+  /* ── footer ── */
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  footer span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="repo-tag">ShriHarsan64K / dotfiles</div>
+    <h1>Git Push</h1>
+    <p class="subtitle"># every push variant — what it does and when to use it</p>
+  </header>
+
+  <div class="tip">
+    <strong>Golden rule:</strong> never force-push to a shared / main branch.
+    Force push only on your own feature branches that no one else has checked out.
+  </div>
+
+  <!-- BASICS -->
+  <div class="section s-basics">
+    <div class="section-label">
+      <div class="dot dot-basics"></div>
+      <h2>The Basics</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push</code></div>
+        <p class="desc">Push current branch to its tracked upstream — works once upstream is set</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="remote">origin</span> <span class="branch">main</span></code></div>
+        <p class="desc">Push the local <code>main</code> branch to the remote named <code>origin</code></p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">-u</span> <span class="remote">origin</span> <span class="branch">main</span></code></div>
+        <p class="desc">Push and set upstream — future <code>git push</code> needs no arguments on this branch</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="remote">origin</span> <span class="branch">feature-xyz</span></code></div>
+        <p class="desc">Push a local feature branch to remote for the first time</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="remote">origin</span> <span class="branch">local</span>:<span class="branch">remote</span></code></div>
+        <p class="desc">Push a local branch to a remote branch with a different name</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">--all</span> <span class="remote">origin</span></code></div>
+        <p class="desc">Push every local branch to the remote in one go</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BRANCH MANAGEMENT -->
+  <div class="section s-branch">
+    <div class="section-label">
+      <div class="dot dot-branch"></div>
+      <h2>Branch Management</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="remote">origin</span> <span class="flag">--delete</span> <span class="branch">feature-xyz</span></code></div>
+        <p class="desc">Delete a branch on the remote — useful after a PR is merged</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="remote">origin</span> :<span class="branch">feature-xyz</span></code></div>
+        <p class="desc">Shorthand to delete a remote branch — the colon means "push nothing to it"</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">--set-upstream</span> <span class="remote">origin</span> <span class="branch">&lt;branch&gt;</span></code></div>
+        <p class="desc">Link a local branch to a remote branch so tracking is set up</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="remote">origin</span> <span class="flag">HEAD</span></code></div>
+        <p class="desc">Push the current branch without typing its name — HEAD always refers to where you are</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAGS -->
+  <div class="section s-tags">
+    <div class="section-label">
+      <div class="dot dot-tags"></div>
+      <h2>Tags &amp; Releases</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="remote">origin</span> <span class="arg">v1.0.0</span></code></div>
+        <p class="desc">Push a specific tag to remote — tags are not pushed automatically</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">--tags</span></code></div>
+        <p class="desc">Push all local tags to the remote at once</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">--follow-tags</span></code></div>
+        <p class="desc">Push commits and any annotated tags that point to those commits — recommended over --tags</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="remote">origin</span> <span class="flag">--delete</span> <span class="arg">v1.0.0</span></code></div>
+        <p class="desc">Delete a tag from the remote — does not delete the local tag</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FORCE PUSH -->
+  <div class="section s-force">
+    <div class="section-label">
+      <div class="dot dot-force"></div>
+      <h2>Force Push</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card danger">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="danger">--force</span></code></div>
+        <p class="desc">Overwrite remote history with local history — overwrites others' work if used on a shared branch</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">--force-with-lease</span></code></div>
+        <p class="desc">Safer force push — refuses if someone else pushed since your last fetch, preventing accidental overwrites</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">--force-with-lease</span> <span class="flag">--force-if-includes</span></code></div>
+        <p class="desc">Even safer — also checks that remote-tracking refs are up to date before allowing the force push</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- OPTIONS -->
+  <div class="section s-options">
+    <div class="section-label">
+      <div class="dot dot-options"></div>
+      <h2>Useful Options</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">--dry-run</span></code></div>
+        <p class="desc">Simulate the push and show what would happen — nothing is actually sent</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">--verbose</span></code></div>
+        <p class="desc">Show detailed output of what is being pushed and to where</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">--no-verify</span></code></div>
+        <p class="desc">Skip pre-push hooks — useful when hooks are failing but you know the push is safe</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">--atomic</span></code></div>
+        <p class="desc">Push multiple refs as one atomic operation — all succeed or all fail together</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">--mirror</span></code></div>
+        <p class="desc">Mirror all refs including branches, tags, and deletions — used for full repo backups</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">--prune</span></code></div>
+        <p class="desc">Remove remote branches that no longer have a local counterpart</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- COMMON PATTERNS -->
+  <div class="section s-patterns">
+    <div class="section-label">
+      <div class="dot dot-patterns"></div>
+      <h2>Common Patterns</h2>
+    </div>
+    <div class="grid">
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="remote">origin</span> <span class="flag">HEAD</span> <span class="flag">--force-with-lease</span></code></div>
+        <p class="desc">The safest way to force-push the current branch after a rebase or amend</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="flag">-u</span> <span class="remote">origin</span> <span class="flag">HEAD</span></code></div>
+        <p class="desc">Push current branch and set upstream in one command — works on any branch without typing its name</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="remote">origin</span> <span class="flag">--all</span> <span class="flag">--follow-tags</span></code></div>
+        <p class="desc">Push all branches and all their associated tags in one command — great for initial remote setup</p>
+      </div>
+
+      <div class="card">
+        <div class="cmd"><span class="prompt">$</span>
+          <code>git push <span class="remote">origin</span> <span class="flag">--delete</span> <span class="branch">feature</span> &amp;&amp; git branch <span class="flag">-d</span> <span class="branch">feature</span></code></div>
+        <p class="desc">Delete a branch both on remote and locally in one line — full cleanup after merging a PR</p>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <span>ShriHarsan64K / dotfiles — GIT_PUSH_CHEATSHEET.html</span>
+    <span><a href="https://git-scm.com/docs/git-push" target="_blank">git-scm.com/docs/git-push</a></span>
+  </footer>
+
+</div>
+</body>
+</html>
