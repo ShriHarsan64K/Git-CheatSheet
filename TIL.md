@@ -1,4 +1,4 @@
-# 📓 TIL — Today I Learned (Git Edition)
+# 📓 TIL — Today I Learned 
 
 A running log of git tricks, discoveries, and "why didn't I know this sooner" moments.  
 Updated regularly to document things I pick up while working on real projects.
@@ -88,13 +88,4 @@ git resolves it automatically. Huge time-saver on long-running feature branches.
 
 ---
 
-## How to contribute / add your own TILs
-
-1. Fork the repo
-2. Add an entry under today's date in `TIL.md`
-3. Format: `## YYYY-MM-DD` → `### What you learned` → code block + explanation
-4. Submit a PR
-
----
-
-*Started: March 2026 · Updated daily (or close to it)*
+*Started: March 2026 · 
